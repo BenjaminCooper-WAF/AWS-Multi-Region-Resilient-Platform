@@ -1,4 +1,4 @@
-# Multi-Region App + CDN + Incident Automation
+# AWS-Multi-Region-Resilient-Platform
 
 ![AWS](https://img.shields.io/badge/AWS-CLOUD-F3702A?style=for-the-badge&logo=amazonaws&logoColor=white)
 ![Terraform](https://img.shields.io/badge/TERRAFORM-%E2%89%A51.9-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)
