@@ -1,5 +1,12 @@
+# Explanation: this stack has its own state/backend, separate from the root
+# (Tokyo) stack that creates the ALB. It looks the ALB up by name instead of
+# referencing it directly, since cross-state resource references aren't possible.
+data "aws_lb" "ShibuyaCrossing_alb" {
+  name = "ShibuyaCrossing-alb"
+}
+
 # Explanation: CloudFront is the only public doorway — lab3 stands behind it with private infrastructure.
-resource "aws_cloudfront_distribution" "lab3_cf01" {
+resource "aws_cloudfront_distribution" "ShibuyaCrossing_cf01" {
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "${var.project_name}-cf01"
@@ -7,13 +14,7 @@ resource "aws_cloudfront_distribution" "lab3_cf01" {
 
   origin {
     origin_id   = "${var.project_name}-alb-origin01"
-    domain_name = aws_lb.lab3_alb.dns_name
-
-
-    custom_header {
-      name  = "x-lab3-growl"
-      value = var.origin_secret
-    }
+    domain_name = data.aws_lb.ShibuyaCrossing_alb.dns_name
 
     custom_origin_config {
       http_port              = 80
@@ -23,15 +24,17 @@ resource "aws_cloudfront_distribution" "lab3_cf01" {
     }
 
     # Explanation: CloudFront whispers the secret growl — the ALB only trusts this.
+    # Header name/value must match what the ALB listener rule in
+    # ShibuyaCrossing_cloudfront_origin_cloaking.tf actually checks for.
     custom_header {
-      name  = "X-lab3"
-      value = random_password.lab3_origin_header_value01.result
+      name  = var.origin_secret
+      value = random_password.ShibuyaCrossing_origin_header_value01.result
     }
   }
 
   origin {
     origin_id   = "${var.project_name}-alb-origin02"
-    domain_name = aws_lb.lab3_alb.dns_name
+    domain_name = data.aws_lb.ShibuyaCrossing_alb.dns_name
 
     custom_origin_config {
       http_port              = 80
@@ -41,8 +44,8 @@ resource "aws_cloudfront_distribution" "lab3_cf01" {
     }
 
     custom_header {
-      name  = "X-lab3"
-      value = random_password.lab3_origin_header_value01.result
+      name  = var.origin_secret
+      value = random_password.ShibuyaCrossing_origin_header_value01.result
     }
   }
 
@@ -79,7 +82,7 @@ resource "aws_cloudfront_distribution" "lab3_cf01" {
   }
 
   # Explanation: Attach WAF at the edge — now WAF moved to CloudFront.
-  web_acl_id = aws_wafv2_web_acl.lab3_cf_waf01.arn
+  web_acl_id = aws_wafv2_web_acl.ShibuyaCrossing_cf_waf01.arn
 
   # TODO: students set aliases for lab3-growl.com and app.lab3-growl.com
   aliases = [
@@ -100,6 +103,3 @@ resource "aws_cloudfront_distribution" "lab3_cf01" {
     }
   }
 }
-
-
-

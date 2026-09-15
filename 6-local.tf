@@ -19,7 +19,7 @@ locals {
   fqdn                       = "passportpookie.click"
   app_subdomain              = "app.passportpookie.click"
   passportpookie_zone_id     = var.manage_route53_in_terraform ? aws_route53_zone.passportpookie[0].zone_id : data.aws_route53_zone.passportpookie_existing[0].zone_id
-  secret_arn_guess           = "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:${var.secrets_manager}/rds/mysql*"
+  secret_arn_guess           = "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:${var.secrets_manager}*"
   public_subnet_ids          = aws_subnet.public_ShibuyaCrossing[*].id
   private_subnet_ids         = aws_subnet.private_ShibuyaCrossing[*].id
   caching_disabled_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"

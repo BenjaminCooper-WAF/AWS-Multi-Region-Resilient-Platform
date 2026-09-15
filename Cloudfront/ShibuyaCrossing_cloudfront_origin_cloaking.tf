@@ -1,3 +1,18 @@
+# Explanation: looked up by name since the ALB and its SG/listener live in the
+# root (Tokyo) stack's separate state.
+data "aws_security_group" "ShibuyaCrossing_alb_sg" {
+  name = "ShibuyaCrossing-alb-sg"
+}
+
+data "aws_lb_listener" "ShibuyaCrossing_https_listener" {
+  load_balancer_arn = data.aws_lb.ShibuyaCrossing_alb.arn
+  port               = 443
+}
+
+data "aws_lb_target_group" "ShibuyaCrossing_tg01" {
+  name = "${var.project_name}-tg01"
+}
+
 # Explanation: ShibuyaCrossing only opens the hangar to CloudFront — everyone else gets the Wookiee roar.
 data "aws_ec2_managed_prefix_list" "ShibuyaCrossing_cf_origin_facing01" {
   name = "com.amazonaws.global.cloudfront.origin-facing"
@@ -6,7 +21,7 @@ data "aws_ec2_managed_prefix_list" "ShibuyaCrossing_cf_origin_facing01" {
 # Explanation: Only CloudFront origin-facing IPs may speak to the ALB — direct-to-ALB attacks die here.
 resource "aws_security_group_rule" "ShibuyaCrossing_alb_ingress_cf44301" {
   type              = "ingress"
-  security_group_id = aws_security_group.ShibuyaCrossing_alb_sg.id
+  security_group_id = data.aws_security_group.ShibuyaCrossing_alb_sg.id
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
@@ -23,28 +38,30 @@ resource "random_password" "ShibuyaCrossing_origin_header_value01" {
 }
 
 # Explanation: ALB checks for ShibuyaCrossing’s secret growl — no growl, no service.
+# Header name/value here must match the custom_header sent by CloudFront in
+# ShibuyaCrossing_cloudfront_alb.tf.
 resource "aws_lb_listener_rule" "ShibuyaCrossing_require_origin_header01" {
-  listener_arn = aws_lb_listener.ShibuyaCrossing_https_listener.arn
+  listener_arn = data.aws_lb_listener.ShibuyaCrossing_https_listener.arn
   priority     = 10
 
   # If header matches → forward to TG Else → fixed 403
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.ShibuyaCrossing_tg01.arn
+    target_group_arn = data.aws_lb_target_group.ShibuyaCrossing_tg01.arn
   }
 
   condition {
     http_header {
-      http_header_name = "X-ShibuyaCrossing-Growl"
-      values           = [var.origin_secret]
+      http_header_name = var.origin_secret
+      values           = [random_password.ShibuyaCrossing_origin_header_value01.result]
     }
   }
 }
 
 # Explanation: If you don’t know the growl, you get a 403 — ShibuyaCrossing does not negotiate.
 resource "aws_lb_listener_rule" "ShibuyaCrossing_default_block01" {
-  listener_arn = aws_lb_listener.ShibuyaCrossing_https_listener.arn
+  listener_arn = data.aws_lb_listener.ShibuyaCrossing_https_listener.arn
   priority     = 99
 
   action {

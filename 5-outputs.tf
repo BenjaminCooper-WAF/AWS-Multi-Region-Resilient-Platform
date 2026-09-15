@@ -84,7 +84,7 @@ output "alb_dns_name" {
 }
 
 output "ShibuyaCrossing_app_fqdn" {
-  value = "${var.app_subdomain}.${var.domain_name}"
+  value = var.app_subdomain
 }
 
 output "target_group_arn" {
@@ -104,7 +104,7 @@ output "dashboard_name" {
 }
 
 output "ShibuyaCrossing_app_url_https" {
-  value = "https://${var.app_subdomain}.${var.domain_name}"
+  value = "https://${var.app_subdomain}"
 }
 
 output "ShibuyaCrossing_waf_log_destination" {

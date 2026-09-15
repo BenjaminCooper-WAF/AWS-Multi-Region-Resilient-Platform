@@ -66,11 +66,6 @@ variable "project_name" {
   default     = "lab3"
 }
 
-variable "aws_key_pair_name" {
-  description = "Name of the keypair to use for EC2 instances."
-  type        = string
-  default     = "ec2-lab-app"
-}
 
 variable "ec2_instance_type" {
   description = "EC2 instance size for the app."
@@ -106,13 +101,6 @@ variable "db_username" {
   description = "DB master username (students should use Secrets Manager in 1B/1C)."
   type        = string
   default     = "admin" # TODO: student supplies
-}
-
-variable "db_password" {
-  description = "DB master password (DO NOT hardcode in real life; for lab only)."
-  type        = string
-  sensitive   = true
-  default     = "WATER&oil92**" # TODO: student supplies
 }
 
 variable "sns_email_endpoint" {
@@ -200,10 +188,6 @@ variable "alb_access_logs_prefix" {
   description = "S3 prefix for ALB logs."
   type        = string
   default     = "alb-access-logs"
-}
-
-variable "hosted_zone_id" {
-  type = string
 }
 
 variable "waf_log_destination" {

@@ -1,21 +1,36 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.28.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+# Explanation: WAFv2 web ACLs with scope=CLOUDFRONT must be created in us-east-1.
+provider "aws" {
+  alias  = "use1"
+  region = "us-east-1"
+}
+
 data "aws_caller_identity" "current" {}
 
 data "aws_availability_zones" "available" {}
 
-
-data "http" "my_public-ip" {
-  url = "http://ipv4.icanhazip.com"
-}
-
 data "aws_region" "current" {}
-
-data "aws_elb_service_account" "main" {}
-
 
 variable "aws_region" {
   description = "AWS Region for the lab3 fleet to patrol."
   type        = string
-  default     = "ap_northeast-1"
+  default     = "ap-northeast-1"
 }
 
 variable "project_name" {
@@ -24,11 +39,6 @@ variable "project_name" {
   default     = "lab3"
 }
 
-variable "aws_key_pair_name" {
-  description = "Name of the keypair to use for EC2 instances."
-  type        = string
-  default     = "ec2-lab-app"
-}
 
 variable "ec2_instance_type" {
   description = "EC2 instance size for the app."
@@ -64,13 +74,6 @@ variable "db_username" {
   description = "DB master username (students should use Secrets Manager in 1B/1C)."
   type        = string
   default     = "admin" # TODO: student supplies
-}
-
-variable "db_password" {
-  description = "DB master password (DO NOT hardcode in real life; for lab only)."
-  type        = string
-  sensitive   = true
-  default     = "WATER&oil92**" # TODO: student supplies
 }
 
 variable "sns_email_endpoint" {
@@ -158,10 +161,6 @@ variable "alb_access_logs_prefix" {
   description = "S3 prefix for ALB logs."
   type        = string
   default     = "alb-access-logs"
-}
-
-variable "hosted_zone_id" {
-  type = string
 }
 
 variable "waf_log_destination" {

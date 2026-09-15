@@ -41,28 +41,31 @@ output "rds_endpoint" {
 }
 */
 
-output "sns_topic_arn" {
-  value = aws_sns_topic.db_incidents.arn
-}
-
-output "cloudwatch_log_group" {
-  value = aws_cloudwatch_log_group.app_logs.name
-}
+# TODO: liberdade has no SNS topic / app log group of its own yet (those are
+# root/ShibuyaCrossing-stack concepts) - add liberdade-scoped equivalents before
+# re-enabling these outputs.
+# output "sns_topic_arn" {
+#   value = aws_sns_topic.db_incidents.arn
+# }
+#
+# output "cloudwatch_log_group" {
+#   value = aws_cloudwatch_log_group.app_logs.name
+# }
 # Explanation: These outputs prove liberdade built private hyperspace lanes (endpoints) instead of public chaos.
 output "vpce_ssm" {
-  value = aws_vpc_endpoint.ssm.id
+  value = aws_vpc_endpoint.liberdade_ssm.id
 }
 
 output "vpce_logs" {
-  value = aws_vpc_endpoint.logs.id
+  value = aws_vpc_endpoint.liberdade_logs.id
 }
 
 output "vpce_secrets" {
-  value = aws_vpc_endpoint.secrets.id
+  value = aws_vpc_endpoint.liberdade_secrets.id
 }
 
 output "vpce_s3" {
-  value = aws_vpc_endpoint.gateway.id
+  value = aws_vpc_endpoint.liberdade_s3.id
 }
 
 output "ec2_private_ip" {
@@ -75,7 +78,7 @@ output "alb_dns_name" {
 }
 
 output "target_group_arn" {
-  value = aws_lb_target_group.liberdade_tg.arn
+  value = aws_lb_target_group.liberdade_tg01.arn
 }
 /*
 output "acm_cert_arn" {
@@ -108,7 +111,7 @@ output "aws_lambda_function" {
 */
 
 output "listener_arn" {
-  value = aws_lb_listener.liberdade_https_listener.arn
+  value = aws_lb_listener.liberdade_http_listener.arn
 }
 /*
 output "origin_header_value" {
@@ -144,10 +147,6 @@ output "liberdade_transit_gateway_arn" {
   value = aws_ec2_transit_gateway.liberdade_tgw.arn
 }
  
-output "liberdade_sao_paulo_vpc_peering_connection_id" {
-  value = aws_vpc_peering_connection.liberdade_saopaulo_peering.id
-}
-  
 output "liberdade_vpc_id" {
   value = aws_vpc.liberdade_vpc.id
 }
@@ -156,8 +155,8 @@ output "liberdade_tgw" {
   value = aws_ec2_transit_gateway.liberdade_tgw.id
 }
 
-output "tgw_peering_attachment_id" {
-  value = aws_ec2_transit_gateway_peering_attachment.ShibuyaCrossing_to_liberdade.id
+output "tgw_peering_attachment_accepter_id" {
+  value = aws_ec2_transit_gateway_peering_attachment_accepter.liberdade_accept_peer.id
 }
 
 output "tgw_route_table_id" {
@@ -173,10 +172,3 @@ output "aws_route_table" {
   ]
 }
 
-output "ShibuyaCrossing_sao_paulo_vpc_peering_connection_id" {
-  value = aws_vpc_peering_connection.ShibuyaCrossing_liberdade_peering.id
-}
-
-output "liberdade_transit_gateway_id" {
-  value = aws_ec2_transit_gateway.liberdade_tgw.id
-}

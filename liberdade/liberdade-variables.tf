@@ -1,17 +1,5 @@
 data "aws_caller_identity" "saopaulo" {
-  provider = aws.saopaulo
-}
-
-data "aws_availability_zones" "saopaulo" {
-  provider = aws.saopaulo
-  state    = "available"
-}
-data "http" "my_public-ip" {
-  url = "http://ipv4.icanhazip.com"
-}
-
-data "aws_elb_service_account" "main" {
-  provider = aws.saopaulo
+  provider = aws.liberdade
 }
 
 variable "second_region" {
@@ -36,17 +24,17 @@ variable "secondary_tgw_asn" {
   default = 27513
 }
 
+variable "tgw_peering_attachment_id" {
+  description = "ID of the TGW peering attachment created by the root (Tokyo) stack's aws_ec2_transit_gateway_peering_attachment.ShibuyaCrossing_to_liberdade. Copy this from that stack's output after it's applied - a peering attachment is created once by the requester side and can't be re-declared here."
+  type        = string
+}
+
 variable "project_name" {
   description = "Same prefix name for all resources."
   type        = string
   default     = "liberdade"
 }
 
-variable "aws_key_pair_name" {
-  description = "Name of the keypair to use for EC2 instances."
-  type        = string
-  default     = "ec2-lab-app"
-}
 
 variable "ec2_instance_type" {
   description = "EC2 instance size for the app."
@@ -134,10 +122,6 @@ variable "alb_access_logs_prefix" {
   description = "S3 prefix for ALB logs."
   type        = string
   default     = "alb-access-logs"
-}
-
-variable "hosted_zone_id" {
-  type = string
 }
 
 variable "waf_log_destination" {

@@ -30,7 +30,7 @@ resource "aws_cloudfront_distribution" "ShibuyaCrossing_honors_distribution" {
   enabled = true
 
   origin {
-    domain_name = aws_lb.ShibuyaCrossing_alb.dns_name
+    domain_name = data.aws_lb.ShibuyaCrossing_alb.dns_name
     origin_id   = "${var.project_name}-alb-origin01"
 
     custom_origin_config {

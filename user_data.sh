@@ -44,7 +44,7 @@ SECRET_ID = os.environ.get("SECRET_ID", "lab/rds/mysql")
 try:
     import watchtower
     cw = watchtower.CloudWatchLogHandler(
-        log_group_name="/aws/ec2/lab2-rds-app",
+        log_group_name="/aws/ec2/lab3-rds-app",
         stream_name=f"rdsapp-{int(time.time())}",
         send_interval=10,
         boto3_client=boto3.client("logs", region_name=REGION),
@@ -179,7 +179,7 @@ After=network.target
 User=rdsapp
 Group=rdsapp
 WorkingDirectory=/opt/rdsapp
-Environment=AWS_REGION=eu-west-2
+Environment=AWS_REGION=ap-northeast-1
 Environment=SECRET_ID=lab/rds/mysql
 
 # allow non-root bind to port 80

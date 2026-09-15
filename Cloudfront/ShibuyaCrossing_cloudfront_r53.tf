@@ -14,7 +14,7 @@ resource "aws_route53_record" "ShibuyaCrossing_apex_to_cf01" {
 # Explanation: app.ShibuyaCrossing-growl.com also points to CloudFront — same doorway, different sign.
 resource "aws_route53_record" "ShibuyaCrossing_app_to_cf01" {
   zone_id = local.hosted_zone_id
-  name    = "${var.app_subdomain}.${var.domain_name}"
+  name    = var.app_subdomain
   type    = "A"
 
   alias {

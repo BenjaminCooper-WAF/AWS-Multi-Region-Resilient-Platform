@@ -8,8 +8,8 @@ locals {
 
   my_ip_cidr = "${chomp(data.http.my_public_ip.response_body)}/32"
 
-  public_subnet_ids  = aws_subnet.public_saopaulo[*].id
-  private_subnet_ids = aws_subnet.private_saopaulo[*].id
+  public_subnet_ids  = aws_subnet.public_liberdade[*].id
+  private_subnet_ids = aws_subnet.private_liberdade[*].id
 
   tags = {
     project     = var.project_name

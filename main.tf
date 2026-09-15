@@ -89,12 +89,7 @@ resource "aws_instance" "ShibuyaCrossing_ec2" {
   associate_public_ip_address = false
   user_data_replace_on_change = true
 
-  user_data = <<-EOF
-  #!/bin/bash
-  yum update -y
-  yum install -y python3
-  echo "userdata ran" > /tmp/userdata_ok.txt
-EOF
+  user_data = file("${path.module}/user_data.sh")
 
   tags = merge(
     local.tags,
@@ -226,25 +221,6 @@ resource "aws_lb_target_group_attachment" "ShibuyaCrossing_tg_attach01" {
   port             = 80
 }
 # TODO: students ensure EC2 security group allows inbound from ALB SG on this port (rule above)
-
-############################################
-# VPC Endpoint -  Rds endpoint (Interface)
-############################################
-
-# Explanation: S3 is the supply depot—without this, your private world starves (updates, artifacts, logs).
-resource "aws_vpc_endpoint" "lab_rds" {
-  provider            = aws.tokyo
-  vpc_id              = aws_vpc.ShibuyaCrossing_vpc.id
-  service_name        = "com.amazonaws.${data.aws_region.current.region}.ssm"
-  vpc_endpoint_type   = "Interface"
-  private_dns_enabled = true
-  subnet_ids          = local.private_subnet_ids
-  security_group_ids  = [aws_security_group.vpce_allow_tls.id]
-
-  tags = merge(local.tags, {
-    Name = "${local.project_name}-vpce-ssm-extra"
-  })
-}
 
 ############################################
 # VPC Endpoint - S3 (Gateway)
@@ -511,24 +487,12 @@ resource "aws_wafv2_web_acl" "ShibuyaCrossing_waf01" {
   }
 }
 
-# CloudWatch Log Group for WAF
-resource "aws_cloudwatch_log_group" "waf_log_group" {
-  count = var.enable_waf ? 1 : 0
-
-  name              = "aws-waf-logs-ShibuyaCrossing_waf01"
-  retention_in_days = 7
-
-  tags = {
-    Name = "ShibuyaCrossing_waf-logs"
-  }
-}
-
-# WAF Logging Configuration
-resource "aws_wafv2_web_acl_logging_configuration" "lab2_waf_logging" {
-  count                   = var.enable_waf ? 1 : 0
-  resource_arn            = aws_wafv2_web_acl.ShibuyaCrossing_waf01[0].arn
-  log_destination_configs = [aws_cloudwatch_log_group.waf_log_group[0].arn]
-}
+# Explanation: WAF logging for this Web ACL is configured once, via the
+# var.waf_log_destination-gated resources further down (aws_wafv2_web_acl_logging_configuration
+# ShibuyaCrossing_waf_logging01 / _s3_01). AWS only allows one logging config per Web ACL - an
+# earlier duplicate resource here (lab2_waf_logging, pointed at its own log group) was silently
+# overwriting/being overwritten by that one. Removed to avoid the two fighting over the same
+# underlying AWS object.
 
 # Explanation: Attach the shield generator to the customs checkpoint — ALB is now protected.
 resource "aws_wafv2_web_acl_association" "lab2_waf_assoc01" {
@@ -823,6 +787,11 @@ resource "aws_s3_bucket_versioning" "ShibuyaCrossing_ir_reports_versioning" {
 resource "aws_s3_bucket_server_side_encryption_configuration" "ShibuyaCrossing_ir_reports_encryption" {
   bucket = aws_s3_bucket.ShibuyaCrossing_ir_reports_bucket.id
   rule {
+    # Explanation: matches what S3 returns by default so this doesn't perpetually
+    # show as changed on every plan.
+    bucket_key_enabled       = false
+    blocked_encryption_types = ["SSE-C"]
+
     apply_server_side_encryption_by_default {
       sse_algorithm = "aws:kms"
     }
@@ -958,7 +927,10 @@ resource "aws_iam_role_policy_attachment" "ShibuyaCrossing_ir_lambda_basiclogs" 
 
 resource "aws_signer_signing_profile" "ShibuyaCrossing_ir_lambda_signing_profile" {
   platform_id = "AWSLambda-SHA384-ECDSA"
-  name        = "${var.project_name}_ir_lambda_"
+  # Explanation: "${var.project_name}_ir_lambda_" got orphaned as a Canceled profile
+  # during an earlier interrupted apply; AWS Signer won't let a new profile reuse
+  # that exact name, so this uses a distinct suffix.
+  name = "${var.project_name}_ir_lambda_02"
 }
 
 resource "aws_lambda_code_signing_config" "ShibuyaCrossing_ir_lambda_csc" {
@@ -1306,7 +1278,7 @@ resource "aws_route53_record" "ShibuyaCrossing_apex_alias01" {
 ############################################
 
 resource "aws_s3_bucket" "ShibuyaCrossing_alb_logs_bucket" {
-  bucket        = "shibuyacrossing-alb-logs-961341540291"
+  bucket        = "shibuyacrossing-alb-logs-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 }
 
@@ -1326,6 +1298,11 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "ShibuyaCrossing_a
   bucket = aws_s3_bucket.ShibuyaCrossing_alb_logs_bucket.id
 
   rule {
+    # Explanation: matches what S3 returns by default so this doesn't perpetually
+    # show as changed on every plan.
+    bucket_key_enabled       = false
+    blocked_encryption_types = ["SSE-C"]
+
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
@@ -1341,17 +1318,6 @@ resource "aws_s3_bucket_public_access_block" "ShibuyaCrossing_alb_logs_pab01" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-}
-
-# Explanation: Bucket ownership controls prevent log delivery chaos—ShibuyaCrossing likes clean chain-of-custody.
-resource "aws_s3_bucket_ownership_controls" "ShibuyaCrossing_alb_logs" {
-  count = var.enable_alb_access_logs ? 1 : 0
-
-  bucket = aws_s3_bucket.ShibuyaCrossing_alb_logs_bucket.id
-
-  rule {
-    object_ownership = "BucketOwnerPreferred"
-  }
 }
 
 # Explanation: TLS-only—ShibuyaCrossing growls at plaintext and throws it out an airlock.
@@ -1658,6 +1624,13 @@ resource "aws_route_table" "ShibuyaCrossing_private_rt" {
     local.tags,
     { Name = "${var.project_name}-private-rt" }
   )
+
+  # Explanation: the TGW route to liberdade is managed separately by
+  # aws_route.ShibuyaCrossing_to_liberdade_route below - without this, this
+  # resource and that one fight over the same route table on every apply.
+  lifecycle {
+    ignore_changes = [route]
+  }
 }
 
 # Attach ALL private subnets to the private RT
