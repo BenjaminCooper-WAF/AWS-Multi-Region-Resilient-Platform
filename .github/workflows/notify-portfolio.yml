@@ -1,0 +1,29 @@
+name: Notify Portfolio of Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit_message:
+        description: "Release note to pass along (optional)"
+        required: false
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.head_commit.message, 'release:')
+    steps:
+      - name: Trigger portfolio deploy + LinkedIn post
+        env:
+          GH_TOKEN: ${{ secrets.PORTFOLIO_DISPATCH_TOKEN }}
+        run: |
+          gh workflow run "Deploy Portfolio and Publish Release" \
+            --repo BenjaminCooper-WAF/Global-Portfolio-Hosting-Platform \
+            --ref main \
+            -f source_repo="${{ github.repository }}" \
+            -f source_repo_url="https://github.com/${{ github.repository }}" \
+            -f commit_message="${{ github.event.inputs.commit_message || github.event.head_commit.message || format('Manual release of {0}', github.repository) }}"
