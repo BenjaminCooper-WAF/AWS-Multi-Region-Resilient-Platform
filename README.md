@@ -28,7 +28,7 @@ It's three separate Terraform projects, not one. If you try to treat it as a sin
 
 Primary region is Tokyo (`ap-northeast-1`), secondary is São Paulo (`sa-east-1`). The WAF that attaches to CloudFront has to sit in `us-east-1` regardless of where you put everything else — that's just an AWS requirement for CloudFront-linked WAF resources, not a design choice I made.
 
-# Follow These Steps In Order
+# Checkpoints
 
 1. [Prerequisites](#step-1--prerequisites)
 2. [Understand the three-project split](#step-2--understand-the-three-project-split)
